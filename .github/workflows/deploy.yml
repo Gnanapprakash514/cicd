@@ -22,12 +22,34 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and Push Docker image
+      - name: Build Docker Image
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/cicd_pipe:${{ github.sha }} .
-          docker push ${{ secrets.DOCKER_USERNAME }}/cicd_pipe:${{ github.sha }}
+          docker build -t gnanapprakash05/aws-cicd2:${{ github.sha }} .
+          docker tag gnanapprakash05/aws-cicd2:${{ github.sha }} gnanapprakash05/aws-cicd2:latest
 
-      - name: Tag and Push Latest
+      - name: Push Docker Images
         run: |
-          docker tag ${{ secrets.DOCKER_USERNAME }}/cicd_pipe:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/cicd_pipe:latest
-          docker push ${{ secrets.DOCKER_USERNAME }}/cicd_pipe:latest
+          docker push gnanapprakash05/aws-cicd2:${{ github.sha }}
+          docker push gnanapprakash05/aws-cicd2:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: self-hosted
+
+    steps:
+      - name: Pull Latest Docker Image
+        run: |
+          sudo docker pull gnanapprakash05/aws-cicd2:latest
+
+      - name: Stop Existing Container
+        run: |
+          sudo docker stop aws-cicd-container || true
+          sudo docker rm aws-cicd-container || true
+
+      - name: Run New Container
+        run: |
+          sudo docker run -d \
+            --name aws-cicd-container \
+            -p 80:80 \
+            --restart always \
+            gnanapprakash05/aws-cicd2:latest
