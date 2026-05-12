@@ -10,14 +10,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Checkout Source
         uses: actions/checkout@v4
 
-  
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -25,39 +22,12 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-
-      - name: Build Docker Image
+      - name: Build and Push Docker image
         run: |
-          docker build -t gnanapprakash05/cicd_pipe:${{ github.sha }} .
-          docker tag gnanapprakash05/cicd_pipe:${{ github.sha }} gnanapprakash05/cicd_pipe:latest
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/cicd_pipe:${{ github.sha }} .
+          docker push ${{ secrets.DOCKER_USERNAME }}/cicd_pipe:${{ github.sha }}
 
-      
-      - name: Push Docker Images
+      - name: Tag and Push Latest
         run: |
-          docker push gnanapprakash05/cicd_pipe:${{ github.sha }}
-          docker push gnanapprakash05/cicd_pipe:latest
-
-  deploy:
-    needs: build-and-push
-    runs-on: self-hosted
-
-    steps:
-    
-      - name: Pull Latest Docker Image
-        run: |
-          sudo docker pull gnanapprakash05/cicd_pipe:latest
-
-    
-      - name: Stop Existing Container
-        run: |
-          sudo docker stop cicd_pipe_container || true
-          sudo docker rm cicd_pipe_container || true
-
-     
-      - name: Run New Container
-        run: |
-          sudo docker run -d \
-            --name cicd_pipe_container \
-            -p 80:80 \
-            --restart always \
-            gnanapprakash05/cicd_pipe:latest
+          docker tag ${{ secrets.DOCKER_USERNAME }}/cicd_pipe:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/cicd_pipe:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/cicd_pipe:latest
